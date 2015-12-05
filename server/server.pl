@@ -2,10 +2,15 @@
 
 # Shitty little chat-by-DNS demo prototype
 
+# v0.1 just responds with the same message
+# v0.2 keeps an in-memory store per chatroom
+
 use strict;
 use warnings;
 use Net::DNS::Nameserver;
 use Net::IDN::Encode ':all';
+
+use msgdb;
 
 sub reply_handler {
     my ($qname, $qclass, $qtype, $peerhost,$query,$conn) = @_;
@@ -23,6 +28,10 @@ sub reply_handler {
 	$room = $4;
 	print "$uname at $ts in $room: $msg\n";
 
+        #TODO: validate the message
+
+	send_message_to_room($ts, $msg, $uname, $room);
+
 	$recordname = time().".".$room.".MSG";
 	$rr = new Net::DNS::RR(name => $recordname,
 			       type => 'TXT',
@@ -39,6 +48,7 @@ sub reply_handler {
     # mark the answer as authoritive (by setting the 'aa' flag
     return ($rcode, \@ans, \@auth, \@add, { aa => 1 });
 }
+
 
 my $ns = new Net::DNS::Nameserver(
     LocalPort    => 53,
